@@ -39,7 +39,6 @@ The project is functional with 5 visual styles. A performance benchmark (5s expo
 ## Setup
 
 ```bash
-cd ReelsAudioMaker
 py -3 -m venv .venv
 .venv\Scripts\activate          # Windows
 pip install -r requirements.txt

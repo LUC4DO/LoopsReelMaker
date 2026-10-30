@@ -1,0 +1,153 @@
+"""Neon Prism — extruded 3D spectrum bars + mirrored waveform."""
+
+from __future__ import annotations
+
+import cv2
+import numpy as np
+
+from .base import (
+    FrameContext,
+    Palette,
+    add_vignette,
+    draw_hud,
+    draw_waveform_strip,
+    lerp_color,
+    perspective_bar_poly,
+    resample_spectrum,
+    vertical_gradient,
+)
+
+PALETTES: list[Palette] = [
+    Palette(
+        "cyber_magenta",
+        "Cyber Magenta",
+        bg_top=(40, 0, 40),
+        bg_bottom=(10, 0, 20),
+        primary=(255, 0, 220),
+        secondary=(180, 80, 255),
+        accent=(0, 255, 240),
+        text=(255, 240, 255),
+        glow=(255, 100, 255),
+    ),
+    Palette(
+        "electric_cyan",
+        "Electric Cyan",
+        bg_top=(30, 20, 0),
+        bg_bottom=(10, 5, 0),
+        primary=(255, 230, 0),
+        secondary=(255, 160, 40),
+        accent=(80, 255, 255),
+        text=(240, 255, 255),
+        glow=(255, 255, 120),
+    ),
+    Palette(
+        "acid_lime",
+        "Acid Lime",
+        bg_top=(5, 25, 5),
+        bg_bottom=(0, 8, 0),
+        primary=(40, 255, 80),
+        secondary=(0, 200, 120),
+        accent=(200, 255, 0),
+        text=(230, 255, 230),
+        glow=(100, 255, 100),
+    ),
+    Palette(
+        "hot_amber",
+        "Hot Amber",
+        bg_top=(0, 15, 40),
+        bg_bottom=(0, 5, 15),
+        primary=(0, 160, 255),
+        secondary=(0, 90, 255),
+        accent=(40, 220, 255),
+        text=(255, 245, 230),
+        glow=(0, 200, 255),
+    ),
+    Palette(
+        "ultra_violet",
+        "Ultra Violet",
+        bg_top=(50, 0, 30),
+        bg_bottom=(15, 0, 10),
+        primary=(255, 60, 180),
+        secondary=(200, 40, 255),
+        accent=(255, 180, 255),
+        text=(255, 230, 255),
+        glow=(255, 120, 255),
+    ),
+]
+
+
+def draw_frame(ctx: FrameContext) -> np.ndarray:
+    p = ctx.palette
+    # Invert gradient: top is regular color, bottom is darker.
+    # Subtle vignette strength changed from 0.45 to 0.25.
+    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom)
+    bands = resample_spectrum(ctx.spectrum, 28)
+    pulse = 0.85 + 0.15 * ctx.beat_pulse
+
+    base_y = int(ctx.height * 0.72)
+    margin = int(ctx.width * 0.08)
+    usable = ctx.width - 2 * margin
+    bar_w = max(8, usable // len(bands) - 6)
+    depth = int(18 + 10 * ctx.beat_pulse)
+    max_h = int(ctx.height * 0.38)
+
+    for i, mag in enumerate(bands):
+        x = margin + i * (usable // len(bands))
+        bar_h = int(mag * max_h * pulse)
+        if bar_h < 4:
+            continue
+        face = lerp_color(p.primary, p.accent, i / max(len(bands) - 1, 1))
+        side = lerp_color(face, (0, 0, 0), 0.35)
+        top = lerp_color(face, p.glow, 0.4)
+        poly = perspective_bar_poly(x, base_y, bar_w, bar_h, depth)
+        # face
+        cv2.fillPoly(
+            frame,
+            [np.array([[x, base_y], [x + bar_w, base_y], [x + bar_w, base_y - bar_h], [x, base_y - bar_h]], np.int32)],
+            face,
+        )
+        # top
+        cv2.fillPoly(
+            frame,
+            [
+                np.array(
+                    [
+                        [x, base_y - bar_h],
+                        [x + bar_w, base_y - bar_h],
+                        [x + bar_w + depth, base_y - bar_h - depth],
+                        [x + depth, base_y - bar_h - depth],
+                    ],
+                    np.int32,
+                )
+            ],
+            top,
+        )
+        # side
+        cv2.fillPoly(
+            frame,
+            [
+                np.array(
+                    [
+                        [x + bar_w, base_y],
+                        [x + bar_w + depth, base_y - depth],
+                        [x + bar_w + depth, base_y - bar_h - depth],
+                        [x + bar_w, base_y - bar_h],
+                    ],
+                    np.int32,
+                )
+            ],
+            side,
+        )
+        cv2.polylines(frame, [poly[:4]], True, p.glow, 1, cv2.LINE_AA)
+
+    draw_waveform_strip(
+        frame,
+        ctx.waveform,
+        y_center=int(ctx.height * 0.82),
+        height=int(ctx.height * 0.08),
+        color=p.secondary,
+        mirror=True,
+    )
+    draw_hud(frame, ctx, title_scale=2.4)
+    # Reduced vignette from 0.45 to 0.25
+    return add_vignette(frame, 0.25)

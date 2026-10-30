@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import subprocess
 import tempfile
 from pathlib import Path
 from typing import Callable
@@ -83,7 +82,8 @@ def export_mp4(
     # present ffmpeg will fall back to libx265.
     # We also request explicit thread count for libx265 to utilise all
     # CPU cores.
-    import os, subprocess
+    import os
+    import subprocess
     cpu_threads = os.cpu_count() or 1
     # Probe ffmpeg for amf support (quick check, ignore errors)
     amf_supported = False

@@ -73,8 +73,8 @@ def benchmark(
     timings["analysis"] = time.perf_counter() - t0
     print(f"  [1/4] Audio analysis: {timings['analysis']:.2f}s  (duration={analysis.duration:.2f}s, bpm={analysis.bpm:.1f}, key={analysis.key})")
 
-    # Cap duration if requested
-    export_duration = min(analysis.duration, max_duration) if max_duration else min(analysis.duration, 30.0)
+    # Cap duration if requested (used internally by export_mp4 via video_duration)
+    _ = max_duration if max_duration else 30.0
 
     # 2. Build render settings
     settings = RenderSettings(

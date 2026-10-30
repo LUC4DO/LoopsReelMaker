@@ -15,64 +15,9 @@ from .base import (
     resample_spectrum,
     vertical_gradient,
 )
+from .palettes import get_style_palettes
 
-PALETTES: list[Palette] = [
-    Palette(
-        "sunset_horizon",
-        "Sunset Horizon",
-        bg_top=(51, 17, 68),
-        bg_bottom=(17, 4, 8),
-        primary=(0, 120, 255),
-        secondary=(180, 0, 255),
-        accent=(80, 220, 255),
-        text=(255, 240, 255),
-        glow=(100, 180, 255),
-    ),
-    Palette(
-        "night_drive",
-        "Night Drive",
-        bg_top=(34, 8, 4),
-        bg_bottom=(8, 0, 0),
-        primary=(255, 180, 40),
-        secondary=(255, 80, 120),
-        accent=(200, 255, 255),
-        text=(230, 250, 255),
-        glow=(255, 200, 100),
-    ),
-    Palette(
-        "miami_vice",
-        "Miami Vice",
-        bg_top=(59, 17, 42),
-        bg_bottom=(21, 4, 12),
-        primary=(255, 100, 255),
-        secondary=(255, 220, 80),
-        accent=(100, 255, 220),
-        text=(255, 245, 255),
-        glow=(255, 150, 255),
-    ),
-    Palette(
-        "phosphor_green",
-        "Phosphor Green",
-        bg_top=(6, 17, 4),
-        bg_bottom=(1, 4, 0),
-        primary=(40, 255, 60),
-        secondary=(20, 180, 40),
-        accent=(180, 255, 180),
-        text=(200, 255, 200),
-        glow=(80, 255, 100),
-    ),
-    Palette(
-        "vapor_pink",
-        "Vapor Pink",
-        bg_top=(42, 12, 34),
-        bg_bottom=(12, 4, 17),
-        primary=(255, 120, 220),
-        secondary=(200, 180, 255),
-        accent=(255, 200, 255),
-        text=(255, 240, 255),
-        glow=(255, 160, 255),
-    ),
-]
+PALETTES: list[Palette] = get_style_palettes("crt_retro")
 
 
 def _draw_grid(frame: np.ndarray, p: Palette, t: float, pulse: float) -> None:

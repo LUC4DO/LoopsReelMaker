@@ -14,64 +14,9 @@ from .base import (
     resample_spectrum,
     vertical_gradient,
 )
+from .palettes import get_style_palettes
 
-PALETTES: list[Palette] = [
-    Palette(
-        "deep_ocean",
-        "Deep Ocean",
-        bg_top=(34, 12, 4),
-        bg_bottom=(8, 4, 0),
-        primary=(255, 180, 40),
-        secondary=(200, 120, 20),
-        accent=(255, 220, 120),
-        text=(240, 250, 255),
-        glow=(255, 200, 100),
-    ),
-    Palette(
-        "soft_aurora",
-        "Soft Aurora",
-        bg_top=(25, 17, 8),
-        bg_bottom=(8, 6, 4),
-        primary=(180, 255, 120),
-        secondary=(255, 160, 200),
-        accent=(120, 255, 220),
-        text=(245, 255, 250),
-        glow=(200, 255, 200),
-    ),
-    Palette(
-        "gold_pulse",
-        "Gold Pulse",
-        bg_top=(12, 17, 29),
-        bg_bottom=(4, 6, 10),
-        primary=(40, 190, 255),
-        secondary=(20, 140, 220),
-        accent=(120, 230, 255),
-        text=(255, 250, 240),
-        glow=(80, 210, 255),
-    ),
-    Palette(
-        "rose_quartz",
-        "Rose Quartz",
-        bg_top=(29, 12, 25),
-        bg_bottom=(10, 4, 8),
-        primary=(200, 140, 255),
-        secondary=(255, 160, 200),
-        accent=(255, 200, 230),
-        text=(255, 240, 250),
-        glow=(230, 180, 255),
-    ),
-    Palette(
-        "mono_ember",
-        "Mono Ember",
-        bg_top=(15, 15, 15),
-        bg_bottom=(4, 4, 4),
-        primary=(200, 200, 200),
-        secondary=(140, 140, 140),
-        accent=(255, 180, 80),
-        text=(245, 245, 245),
-        glow=(255, 220, 180),
-    ),
-]
+PALETTES: list[Palette] = get_style_palettes("orbital_pulse")
 
 
 def draw_frame(ctx: FrameContext) -> np.ndarray:

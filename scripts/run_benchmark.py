@@ -1,8 +1,6 @@
 """Benchmark script for ReelsAudioMaker export pipeline."""
 
-import argparse
 import time
-import subprocess
 import sys
 from pathlib import Path
 

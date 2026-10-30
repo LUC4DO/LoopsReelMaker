@@ -23,8 +23,9 @@ PALETTES: list[Palette] = get_style_palettes("lofi_drift")
 
 def draw_frame(ctx: FrameContext) -> np.ndarray:
     p = ctx.palette
-    # static gradient using defined top and bottom colors
-    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom)
+    # Load pre-rendered gradient background (with vignette)
+    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom,
+                              style_id="lofi_drift", palette_id=p.id)
 
     # soft glowing blobs reactive to low bands
     bands = resample_spectrum(ctx.spectrum, 8)

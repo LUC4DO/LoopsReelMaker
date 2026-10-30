@@ -60,7 +60,8 @@ def _rgb_fringe(frame: np.ndarray, amount: int = 3) -> np.ndarray:
 
 def draw_frame(ctx: FrameContext) -> np.ndarray:
     p = ctx.palette
-    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom)
+    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom,
+                              style_id="crt_retro", palette_id=p.id)
     _draw_grid(frame, p, ctx.t, ctx.beat_pulse)
 
     bands = resample_spectrum(ctx.spectrum, 40)

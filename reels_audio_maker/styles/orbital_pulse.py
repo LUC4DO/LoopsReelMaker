@@ -21,7 +21,8 @@ PALETTES: list[Palette] = get_style_palettes("orbital_pulse")
 
 def draw_frame(ctx: FrameContext) -> np.ndarray:
     p = ctx.palette
-    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom)
+    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom,
+                              style_id="orbital_pulse", palette_id=p.id)
     cx, cy = ctx.width // 2, int(ctx.height * 0.48)
     bands = resample_spectrum(ctx.spectrum, 48)
     n = len(bands)

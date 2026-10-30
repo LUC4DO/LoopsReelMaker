@@ -60,9 +60,10 @@ def _block_glitch(frame: np.ndarray, intensity: float, seed: int) -> np.ndarray:
     h, w = out.shape[:2]
     rng = np.random.default_rng(seed)
     n = int(4 + 10 * intensity)
+    max_bw = max(41, w // 2)
     for _ in range(n):
-        bh = int(rng.integers(8, 60))
-        bw = int(rng.integers(40, w // 2))
+        bh = int(rng.integers(8, min(60, h)))
+        bw = int(rng.integers(40, max_bw))
         y = int(rng.integers(0, max(h - bh, 1)))
         x = int(rng.integers(0, max(w - bw, 1)))
         shift = int(rng.integers(-40, 40))
@@ -83,7 +84,8 @@ def _chromatic(frame: np.ndarray, amount: int) -> np.ndarray:
 
 def draw_frame(ctx: FrameContext) -> np.ndarray:
     p = ctx.palette
-    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom)
+    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom,
+                              style_id="glitch_tunnel", palette_id=p.id)
     _tunnel(frame, p, ctx.t, ctx.spectrum, 0.7 + 0.3 * ctx.beat_pulse)
 
     # starfield rush

@@ -18,6 +18,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "assets" / "previews"
+GRADIENT_DIR = ROOT / "assets" / "gradients"
 
 W, H = 360, 640
 FPS = 30
@@ -25,6 +26,29 @@ DURATION = 3.0
 EXAMPLE_TITLE = "Sample Loop"
 EXAMPLE_ARTIST = "Demo Artist"
 EXAMPLE_META = "128 BPM  ·  C minor"
+
+
+def load_gradient_asset(style_id: str, palette_id: str) -> np.ndarray | None:
+    """Load pre-rendered gradient background from assets/gradients/."""
+    asset_path = GRADIENT_DIR / f"{style_id}_{palette_id}.png"
+    if not asset_path.is_file():
+        return None
+    # Load with IMREAD_UNCHANGED to preserve 16-bit depth
+    img = cv2.imread(str(asset_path), cv2.IMREAD_UNCHANGED)
+    if img is None:
+        return None
+
+    # Convert to float32 [0, 255] regardless of source bit depth
+    if img.dtype == np.uint16:
+        # 16-bit PNG: [0, 65535] → [0, 255]
+        img = img.astype(np.float32) / 257.0
+    else:
+        # 8-bit PNG
+        img = img.astype(np.float32)
+
+    # Resize to preview resolution
+    return cv2.resize(img, (W, H), interpolation=cv2.INTER_LANCZOS4)
+
 
 # style_id -> list of (palette_id, colors dict)
 PREVIEWS = {
@@ -66,21 +90,23 @@ PREVIEWS = {
 }
 
 
-def gradient(top, bottom):
-    frame = np.zeros((H, W, 3), dtype=np.uint8)
-    for y in range(H):
-        a = y / (H - 1)
-        frame[y, :] = [int(top[i] * (1 - a) + bottom[i] * a) for i in range(3)]
-    return frame
-
-
 def text(frame, s, center, scale, color, thick=2):
     font = cv2.FONT_HERSHEY_SIMPLEX
     (tw, th), _ = cv2.getTextSize(s, font, scale, thick)
     x = int(center[0] - tw / 2)
     y = int(center[1] + th / 2)
-    cv2.putText(frame, s, (x + 1, y + 1), font, scale, (0, 0, 0), thick + 1, cv2.LINE_AA)
-    cv2.putText(frame, s, (x, y), font, scale, color, thick, cv2.LINE_AA)
+
+    # cv2.putText requires 8-bit image - convert temporarily
+    frame_u8 = np.clip(frame, 0, 255).astype(np.uint8)
+    cv2.putText(frame_u8, s, (x + 1, y + 1), font, scale, (0, 0, 0), thick + 1, cv2.LINE_AA)
+    cv2.putText(frame_u8, s, (x, y), font, scale, color, thick, cv2.LINE_AA)
+
+    # Copy back the modified text area
+    y_min = max(0, y - th - 2)
+    y_max = min(frame.shape[0], y + th + 2)
+    x_min = max(0, x - 2)
+    x_max = min(frame.shape[1], x + tw + 2)
+    frame[y_min:y_max, x_min:x_max] = frame_u8[y_min:y_max, x_min:x_max].astype(np.float32)
 
 
 def hud(frame, text_color, accent):
@@ -206,9 +232,15 @@ def bake_one(style_id: str, palette_id: str, colors) -> Path:
     ]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     assert proc.stdin is not None
+
+    # Load pre-rendered gradient background once
+    gradient_bg = load_gradient_asset(style_id, palette_id)
+    if gradient_bg is None:
+        raise RuntimeError(f"Gradient asset not found: {style_id}_{palette_id}.png")
+
     for i in range(total):
         t = i / FPS
-        frame = gradient(top, bottom)
+        frame = gradient_bg.copy()  # Start with the pre-rendered gradient
         drawer(frame, t, primary, accent)
         hud(frame, (245, 245, 250), accent)
         proc.stdin.write(frame.tobytes())

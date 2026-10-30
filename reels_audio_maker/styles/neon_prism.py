@@ -22,8 +22,9 @@ PALETTES: list[Palette] = get_style_palettes("neon_prism")
 
 def draw_frame(ctx: FrameContext) -> np.ndarray:
     p = ctx.palette
-    # Restore gradient
-    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom)
+    # Load pre-rendered gradient background (with vignette)
+    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom,
+                              style_id="neon_prism", palette_id=p.id)
     bands = resample_spectrum(ctx.spectrum, 52)
     pulse = 0.85 + 0.25 * ctx.beat_pulse
 

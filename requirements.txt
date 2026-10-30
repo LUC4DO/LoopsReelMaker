@@ -1,8 +1,8 @@
-customtkinter>=5.2.2
-librosa>=0.10.2
-numpy>=1.26.0
-opencv-python>=4.9.0
-Pillow>=10.2.0
-imageio-ffmpeg>=0.4.9
-soundfile>=0.12.1
-scipy>=1.11.0
+customtkinter>=6.0.0
+librosa==0.10.2
+numpy>=2.0.0
+opencv-python==5.0.0.93
+Pillow==10.4.0
+imageio-ffmpeg==0.6.0
+soundfile==0.14.0
+scipy==1.18.1

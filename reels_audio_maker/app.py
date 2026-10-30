@@ -207,14 +207,14 @@ class LoopReelMakerApp(ctk.CTk):
         def work():
             try:
                 analysis = analyze_audio(path)
-            except Exception as exc:
-                self.after(0, lambda: self._audio_failed(str(exc)))
+            except Exception:
+                self.after(0, lambda: self._audio_failed("Audio analysis failed"))
                 return
             self.after(0, lambda: self._audio_ready(Path(path), analysis))
 
         threading.Thread(target=work, daemon=True).start()
 
-    def _audio_failed(self, err: str) -> None:
+    def _audio_failed(self, err: str = "Audio analysis failed") -> None:
         self.audio_btn.configure(state="normal", text="Choose audio…")
         messagebox.showerror("Audio analysis failed", err)
 
@@ -314,8 +314,8 @@ class LoopReelMakerApp(ctk.CTk):
                     progress_cb=progress,
                     use_gpu=self.use_gpu_var.get(),
                 )
-            except Exception as exc:
-                self.after(0, lambda: self._export_done(False, str(exc), out))
+            except Exception:
+                self.after(0, lambda: self._export_done(False, "Export failed", out))
                 return
             self.after(0, lambda: self._export_done(True, "", out))
 

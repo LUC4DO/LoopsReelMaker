@@ -14,64 +14,9 @@ from .base import (
     resample_spectrum,
     vertical_gradient,
 )
+from .palettes import get_style_palettes
 
-PALETTES: list[Palette] = [
-    Palette(
-        "rave_rgb",
-        "Rave RGB",
-        bg_top=(8, 0, 0),
-        bg_bottom=(0, 0, 8),
-        primary=(0, 0, 255),
-        secondary=(0, 255, 0),
-        accent=(255, 0, 255),
-        text=(255, 255, 255),
-        glow=(255, 255, 0),
-    ),
-    Palette(
-        "toxic_waste",
-        "Toxic Waste",
-        bg_top=(4, 17, 4),
-        bg_bottom=(0, 4, 0),
-        primary=(0, 255, 80),
-        secondary=(0, 200, 255),
-        accent=(40, 255, 40),
-        text=(220, 255, 220),
-        glow=(100, 255, 0),
-    ),
-    Palette(
-        "ice_breaker",
-        "Ice Breaker",
-        bg_top=(34, 17, 4),
-        bg_bottom=(12, 4, 0),
-        primary=(255, 220, 120),
-        secondary=(255, 180, 60),
-        accent=(200, 255, 255),
-        text=(240, 250, 255),
-        glow=(255, 255, 200),
-    ),
-    Palette(
-        "blood_neon",
-        "Blood Neon",
-        bg_top=(4, 0, 17),
-        bg_bottom=(0, 0, 4),
-        primary=(40, 40, 255),
-        secondary=(0, 0, 180),
-        accent=(80, 120, 255),
-        text=(255, 230, 230),
-        glow=(100, 80, 255),
-    ),
-    Palette(
-        "monochrome_static",
-        "Monochrome Static",
-        bg_top=(17, 17, 17),
-        bg_bottom=(0, 0, 0),
-        primary=(220, 220, 220),
-        secondary=(140, 140, 140),
-        accent=(255, 255, 255),
-        text=(245, 245, 245),
-        glow=(200, 200, 200),
-    ),
-]
+PALETTES: list[Palette] = get_style_palettes("glitch_tunnel")
 
 
 def _tunnel(frame: np.ndarray, p: Palette, t: float, spectrum: np.ndarray, pulse: float) -> None:

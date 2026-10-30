@@ -8,7 +8,6 @@ import numpy as np
 from .base import (
     FrameContext,
     Palette,
-    add_vignette,
     draw_hud,
     draw_waveform_strip,
     lerp_color,
@@ -16,64 +15,9 @@ from .base import (
     resample_spectrum,
     vertical_gradient,
 )
+from .palettes import get_style_palettes
 
-PALETTES: list[Palette] = [
-    Palette(
-        "cyber_magenta",
-        "Cyber Magenta",
-        bg_top=(34, 0, 34),
-        bg_bottom=(8, 0, 17),
-        primary=(255, 0, 220),
-        secondary=(180, 80, 255),
-        accent=(0, 255, 240),
-        text=(255, 240, 255),
-        glow=(255, 100, 255),
-    ),
-    Palette(
-        "electric_cyan",
-        "Electric Cyan",
-        bg_top=(25, 17, 0),
-        bg_bottom=(8, 4, 0),
-        primary=(255, 230, 0),
-        secondary=(255, 160, 40),
-        accent=(80, 255, 255),
-        text=(240, 255, 255),
-        glow=(255, 255, 120),
-    ),
-    Palette(
-        "acid_lime",
-        "Acid Lime",
-        bg_top=(4, 21, 4),
-        bg_bottom=(0, 6, 0),
-        primary=(40, 255, 80),
-        secondary=(0, 200, 120),
-        accent=(200, 255, 0),
-        text=(230, 255, 230),
-        glow=(100, 255, 100),
-    ),
-    Palette(
-        "hot_amber",
-        "Hot Amber",
-        bg_top=(0, 12, 34),
-        bg_bottom=(0, 4, 12),
-        primary=(0, 160, 255),
-        secondary=(0, 90, 255),
-        accent=(40, 220, 255),
-        text=(255, 245, 230),
-        glow=(0, 200, 255),
-    ),
-    Palette(
-        "ultra_violet",
-        "Ultra Violet",
-        bg_top=(42, 0, 25),
-        bg_bottom=(12, 0, 8),
-        primary=(255, 60, 180),
-        secondary=(200, 40, 255),
-        accent=(255, 180, 255),
-        text=(255, 230, 255),
-        glow=(255, 120, 255),
-    ),
-]
+PALETTES: list[Palette] = get_style_palettes("neon_prism")
 
 
 def draw_frame(ctx: FrameContext) -> np.ndarray:

@@ -13,7 +13,7 @@ from .audio_analysis import (
     waveform_window,
 )
 from .styles import StyleDef, get_style
-from .styles.base import FrameContext, Palette, finalize_frame
+from .styles.base import FrameContext, Palette
 
 # Instagram Reels 1440p vertical
 EXPORT_WIDTH = 1440

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Generate ultra-high-quality gradient background images for all 25 palettes.
+Generate ultra-high-quality gradient background images for the 5 color palettes.
+
+Each palette gets ONE gradient background (style-agnostic), used across all 5 styles.
 
 Features:
 - Oklab perceptual color space interpolation (no muddy midtones, hue-preserving)
-- Analytical cos² vignette (no Mach bands, perfect symmetry)
+- Expanded range: lighter top → darker bottom for maximum visual depth
 - 16-bit PNG output (48-bit RGB, 65536 levels/channel → zero banding at source)
 - Float32 precision throughout
-- Single-pass generation, cached Oklab conversions
 
 Run once: python scripts/bake_gradients.py
 """
@@ -30,8 +31,10 @@ W, H = 1440, 2560
 
 OUT_DIR = Path(__file__).resolve().parent.parent / "assets" / "gradients"
 
-# Vignette strength (0.0 to 1.0) - subtle darkening toward edges
-VIGNETTE_STRENGTH = 0.18
+# Gradient expansion factors
+# Make top lighter (toward white) and bottom darker (toward black)
+TOP_LIGHTEN_FACTOR = 0.35   # How much to lighten the top (0.0 = no change, 1.0 = white)
+BOTTOM_DARKEN_FACTOR = 0.45 # How much to darken the bottom (0.0 = no change, 1.0 = black)
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -39,7 +42,6 @@ VIGNETTE_STRENGTH = 0.18
 # Reference: https://bottosson.github.io/posts/oklab/
 # ──────────────────────────────────────────────────────────────────────
 
-# sRGB → linear RGB (inverse companding)
 def _srgb_to_linear(rgb: np.ndarray) -> np.ndarray:
     """sRGB [0,1] → linear RGB [0,1]. Vectorized for (..., 3)."""
     mask = rgb <= 0.04045
@@ -48,7 +50,6 @@ def _srgb_to_linear(rgb: np.ndarray) -> np.ndarray:
 
 def _linear_to_srgb(linear: np.ndarray) -> np.ndarray:
     """Linear RGB [0,1] → sRGB [0,1]. Vectorized for (..., 3)."""
-    # Clamp to avoid numerical issues with slightly negative values
     linear = np.maximum(linear, 0.0)
     mask = linear <= 0.0031308
     return np.where(mask, linear * 12.92, 1.055 * (linear ** (1 / 2.4)) - 0.055)
@@ -61,7 +62,7 @@ _LINEAR_RGB_TO_LMS = np.array([
     [0.0883024619, 0.2817188376, 0.6299787005],
 ], dtype=np.float32)
 
-# LMS → Linear RGB (D65) - inverse of above
+# LMS → Linear RGB (D65) - inverse
 _LMS_TO_LINEAR_RGB = np.array([
     [4.0767416621, -3.3077115913, 0.2309699292],
     [-1.2684380046, 2.6097574011, -0.3413193965],
@@ -85,34 +86,58 @@ _OKLAB_TO_LMS_CUBEROOT = np.array([
 
 def srgb_to_oklab(rgb_0_255: np.ndarray) -> np.ndarray:
     """sRGB uint8/float [0,255] → Oklab float32. Input is RGB order."""
-    # sRGB [0,255] → [0,1]
     rgb = rgb_0_255.astype(np.float32) / 255.0
-    # sRGB → linear RGB
     linear = _srgb_to_linear(rgb)
-    # Linear RGB → LMS
     lms = linear @ _LINEAR_RGB_TO_LMS.T
-    # Cube root
     lms_cbrt = np.cbrt(np.maximum(lms, 0))
-    # LMS → Oklab
     return (lms_cbrt @ _LMS_CUBEROOT_TO_OKLAB.T).astype(np.float32)
 
 
 def oklab_to_srgb(oklab: np.ndarray) -> np.ndarray:
     """Oklab float32 → sRGB float32 [0,255]. Output is RGB order."""
-    # Oklab → LMS (cube root)
     lms_cbrt = oklab @ _OKLAB_TO_LMS_CUBEROOT.T
-    # Cube
     lms = lms_cbrt ** 3
-    # LMS → Linear RGB
     linear = lms @ _LMS_TO_LINEAR_RGB.T
-    # Linear RGB → sRGB
     rgb = _linear_to_srgb(linear)
-    # [0,1] → [0,255]
     return np.clip(rgb * 255.0, 0.0, 255.0).astype(np.float32)
 
 
+def expand_gradient_range(top_bgr: tuple, bottom_bgr: tuple) -> tuple[tuple, tuple]:
+    """
+    Expand gradient range: lighten top toward white, darken bottom toward black.
+
+    Uses Oklab lightness (L) for perceptually correct expansion.
+
+    Returns: (expanded_top_bgr, expanded_bottom_bgr)
+    """
+    # Convert BGR → RGB → Oklab
+    top_rgb = np.array([top_bgr[2], top_bgr[1], top_bgr[0]], dtype=np.float32)
+    bot_rgb = np.array([bottom_bgr[2], bottom_bgr[1], bottom_bgr[0]], dtype=np.float32)
+
+    top_oklab = srgb_to_oklab(top_rgb)   # [L, a, b]
+    bot_oklab = srgb_to_oklab(bot_rgb)
+
+    # Expand in Oklab: lighten top (increase L), darken bottom (decrease L)
+    # L ranges 0-1 in Oklab
+    top_L_expanded = min(1.0, top_oklab[0] + TOP_LIGHTEN_FACTOR * (1.0 - top_oklab[0]))
+    bot_L_expanded = max(0.0, bot_oklab[0] - BOTTOM_DARKEN_FACTOR * bot_oklab[0])
+
+    expanded_top_oklab = np.array([top_L_expanded, top_oklab[1], top_oklab[2]], dtype=np.float32)
+    expanded_bot_oklab = np.array([bot_L_expanded, bot_oklab[1], bot_oklab[2]], dtype=np.float32)
+
+    # Convert back to sRGB
+    expanded_top_rgb = oklab_to_srgb(expanded_top_oklab)
+    expanded_bot_rgb = oklab_to_srgb(expanded_bot_oklab)
+
+    # Convert RGB → BGR
+    expanded_top_bgr = tuple(expanded_top_rgb[::-1].astype(int))
+    expanded_bot_bgr = tuple(expanded_bot_rgb[::-1].astype(int))
+
+    return expanded_top_bgr, expanded_bot_bgr
+
+
 # ──────────────────────────────────────────────────────────────────────
-# Gradient & Vignette Generation
+# Gradient Generation (no vignette)
 # ──────────────────────────────────────────────────────────────────────
 
 def generate_gradient_oklab(top_bgr: tuple, bottom_bgr: tuple) -> np.ndarray:
@@ -130,8 +155,8 @@ def generate_gradient_oklab(top_bgr: tuple, bottom_bgr: tuple) -> np.ndarray:
     top_rgb = np.array([top_bgr[2], top_bgr[1], top_bgr[0]], dtype=np.float32)
     bot_rgb = np.array([bottom_bgr[2], bottom_bgr[1], bottom_bgr[0]], dtype=np.float32)
 
-    top_oklab = srgb_to_oklab(top_rgb)   # (3,)
-    bot_oklab = srgb_to_oklab(bot_rgb)   # (3,)
+    top_oklab = srgb_to_oklab(top_rgb)
+    bot_oklab = srgb_to_oklab(bot_rgb)
 
     # Interpolate in Oklab (perceptually uniform)
     t = np.linspace(0, 1, H, dtype=np.float32).reshape(H, 1, 1)
@@ -146,64 +171,10 @@ def generate_gradient_oklab(top_bgr: tuple, bottom_bgr: tuple) -> np.ndarray:
     return grad_srgb[:, :, ::-1]
 
 
-def apply_vignette_analytical(frame: np.ndarray, strength: float = 0.15) -> np.ndarray:
-    """
-    Apply analytical corner-only vignette in float32 precision.
-
-    Darkens only the corners using a smooth falloff that preserves
-    the top and bottom edge colors completely.
-
-    Args:
-        frame: (H, W, 3) float32 [0, 255] in BGR order
-        strength: 0.0 to 1.0, corner darkening factor
-
-    Returns:
-        Frame with vignette applied, float32 [0, 255]
-    """
-    h, w = frame.shape[:2]
-
-    # Normalized coordinates [-1, 1] with center at (0, 0)
-    y = np.linspace(-1, 1, h, dtype=np.float32)
-    x = np.linspace(-1, 1, w, dtype=np.float32)
-    yy, xx = np.meshgrid(y, x, indexing='ij')
-
-    # Corner-only vignette: we want to darken ONLY the corners
-    # The key insight: distance from center in a way that top/bottom/left/right edges
-    # are NOT affected, only the four corners
-
-    # Distance from vertical center (0 at center, 1 at left/right edges)
-    dist_x = np.abs(xx)
-    # Distance from horizontal center (0 at center, 1 at top/bottom edges)
-    dist_y = np.abs(yy)
-
-    # Corner factor: only high when BOTH dist_x AND dist_y are large
-    # Using a smooth product: corner_factor = dist_x * dist_y
-    # This is 0 at all edges (top, bottom, left, right) and 1 only at corners
-    corner_factor = dist_x * dist_y
-
-    # We want the mask to be 1 everywhere EXCEPT corners
-    # At corners, mask = 1 - strength
-    # So: mask = 1 - strength * corner_factor
-    mask = 1.0 - strength * corner_factor
-
-    out = frame * mask[..., np.newaxis]
-    return np.clip(out, 0.0, 255.0).astype(np.float32)
-
-
 def save_16bit_png(path: Path, frame_bgr_float32: np.ndarray) -> None:
-    """
-    Save float32 BGR [0, 255] as 16-bit PNG (48-bit RGB).
-
-    OpenCV expects RGB for 16-bit PNG, so we convert BGR→RGB
-    and scale to [0, 65535].
-    """
-    # BGR → RGB
-    frame_rgb = frame_bgr_float32[:, :, ::-1]
-
-    # Float32 [0, 255] → uint16 [0, 65535]
+    """Save float32 BGR [0, 255] as 16-bit PNG (48-bit RGB)."""
+    frame_rgb = frame_bgr_float32[:, :, ::-1]  # BGR → RGB
     frame_16 = np.clip(frame_rgb * 257.0, 0, 65535).astype(np.uint16)
-
-    # Save as 16-bit PNG
     cv2.imwrite(str(path), frame_16, [cv2.IMWRITE_PNG_COMPRESSION, 1])
 
 
@@ -214,36 +185,40 @@ def save_16bit_png(path: Path, frame_bgr_float32: np.ndarray) -> None:
 def main() -> int:
     print(f"Generating ultra-high-quality gradients into {OUT_DIR}")
     print(f"  Resolution: {W}×{H}")
-    print(f"  Color space: Oklab perceptual interpolation (correct matrices)")
-    print(f"  Vignette: Analytical cos², strength={VIGNETTE_STRENGTH}")
+    print(f"  Color space: Oklab perceptual interpolation")
+    print(f"  Range expansion: Top lighten={TOP_LIGHTEN_FACTOR}, Bottom darken={BOTTOM_DARKEN_FACTOR}")
+    print(f"  No vignette")
     print(f"  Output: 16-bit PNG (48-bit RGB)")
     print()
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    count = 0
-    total = sum(len(palettes) for palettes in STYLE_PALETTES.values())
+    # Get the 5 palettes from neon_prism (first style in STYLE_PALETTES)
+    palettes = STYLE_PALETTES["neon_prism"]
 
-    for style_id, palettes in STYLE_PALETTES.items():
-        for palette in palettes:
-            count += 1
-            top = palette.bg_top    # BGR
-            bottom = palette.bg_bottom  # BGR
+    print(f"Generating {len(palettes)} palette gradients...")
 
-            print(f"  [{count}/{total}] {style_id}_{palette.id}.png")
-            print(f"      Top: {top}, Bottom: {bottom}")
+    for palette in palettes:
+        top = palette.bg_top    # BGR
+        bottom = palette.bg_bottom  # BGR
 
-            frame = generate_gradient_oklab(top, bottom)
-            frame = apply_vignette_analytical(frame, VIGNETTE_STRENGTH)
+        # Expand the gradient range
+        expanded_top, expanded_bottom = expand_gradient_range(top, bottom)
 
-            out_path = OUT_DIR / f"{style_id}_{palette.id}.png"
-            save_16bit_png(out_path, frame)
+        print(f"  {palette.id}.png")
+        print(f"      Original:    Top={top}, Bottom={bottom}")
+        print(f"      Expanded:    Top={expanded_top}, Bottom={expanded_bottom}")
 
-            # Verify
-            verify = cv2.imread(str(out_path), cv2.IMREAD_UNCHANGED)
-            print(f"      Saved: {verify.shape}, dtype={verify.dtype}, range=[{verify.min()}, {verify.max()}]")
+        frame = generate_gradient_oklab(expanded_top, expanded_bottom)
 
-    print(f"\nDone! Generated {count} ultra-high-quality 16-bit gradient images.")
+        out_path = OUT_DIR / f"{palette.id}.png"
+        save_16bit_png(out_path, frame)
+
+        # Verify
+        verify = cv2.imread(str(out_path), cv2.IMREAD_UNCHANGED)
+        print(f"      Saved: {verify.shape}, dtype={verify.dtype}, range=[{verify.min()}, {verify.max()}]")
+
+    print(f"\nDone! Generated {len(palettes)} ultra-high-quality 16-bit gradient images.")
     return 0
 
 

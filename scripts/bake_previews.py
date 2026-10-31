@@ -28,9 +28,9 @@ EXAMPLE_ARTIST = "Demo Artist"
 EXAMPLE_META = "128 BPM  ·  C minor"
 
 
-def load_gradient_asset(style_id: str, palette_id: str) -> np.ndarray | None:
+def load_gradient_asset(palette_id: str) -> np.ndarray | None:
     """Load pre-rendered gradient background from assets/gradients/."""
-    asset_path = GRADIENT_DIR / f"{style_id}_{palette_id}.png"
+    asset_path = GRADIENT_DIR / f"{palette_id}.png"
     if not asset_path.is_file():
         return None
     # Load with IMREAD_UNCHANGED to preserve 16-bit depth
@@ -51,6 +51,7 @@ def load_gradient_asset(style_id: str, palette_id: str) -> np.ndarray | None:
 
 
 # style_id -> list of (palette_id, colors dict)
+# Using the 5 universal palette IDs across all styles
 PREVIEWS = {
     "neon_prism": [
         ("cyber_magenta", ((40, 0, 40), (10, 0, 20), (255, 0, 220), (0, 255, 240))),
@@ -60,32 +61,32 @@ PREVIEWS = {
         ("ultra_violet", ((50, 0, 30), (15, 0, 10), (255, 60, 180), (255, 180, 255))),
     ],
     "crt_retro": [
-        ("sunset_horizon", ((60, 20, 80), (20, 5, 10), (0, 120, 255), (180, 0, 255))),
-        ("night_drive", ((40, 10, 5), (10, 0, 0), (255, 180, 40), (255, 80, 120))),
-        ("miami_vice", ((70, 20, 50), (25, 5, 15), (255, 100, 255), (255, 220, 80))),
-        ("phosphor_green", ((8, 20, 5), (2, 5, 0), (40, 255, 60), (180, 255, 180))),
-        ("vapor_pink", ((50, 15, 40), (15, 5, 20), (255, 120, 220), (200, 180, 255))),
+        ("cyber_magenta", ((60, 20, 80), (20, 5, 10), (0, 120, 255), (180, 0, 255))),
+        ("electric_cyan", ((40, 10, 5), (10, 0, 0), (255, 180, 40), (255, 80, 120))),
+        ("acid_lime", ((70, 20, 50), (25, 5, 15), (255, 100, 255), (255, 220, 80))),
+        ("hot_amber", ((8, 20, 5), (2, 5, 0), (40, 255, 60), (180, 255, 180))),
+        ("ultra_violet", ((50, 15, 40), (15, 5, 20), (255, 120, 220), (200, 180, 255))),
     ],
     "orbital_pulse": [
-        ("deep_ocean", ((40, 15, 5), (10, 5, 0), (255, 180, 40), (255, 220, 120))),
-        ("soft_aurora", ((30, 20, 10), (10, 8, 5), (180, 255, 120), (255, 160, 200))),
-        ("gold_pulse", ((15, 20, 35), (5, 8, 12), (40, 190, 255), (120, 230, 255))),
-        ("rose_quartz", ((35, 15, 30), (12, 5, 10), (200, 140, 255), (255, 160, 200))),
-        ("mono_ember", ((18, 18, 18), (5, 5, 5), (200, 200, 200), (255, 180, 80))),
+        ("cyber_magenta", ((40, 15, 5), (10, 5, 0), (255, 180, 40), (255, 220, 120))),
+        ("electric_cyan", ((30, 20, 10), (10, 8, 5), (180, 255, 120), (255, 160, 200))),
+        ("acid_lime", ((15, 20, 35), (5, 8, 12), (40, 190, 255), (120, 230, 255))),
+        ("hot_amber", ((35, 15, 30), (12, 5, 10), (200, 140, 255), (255, 160, 200))),
+        ("ultra_violet", ((18, 18, 18), (5, 5, 5), (200, 200, 200), (255, 180, 80))),
     ],
     "glitch_tunnel": [
-        ("rave_rgb", ((10, 0, 0), (0, 0, 10), (0, 0, 255), (255, 0, 255))),
-        ("toxic_waste", ((5, 20, 5), (0, 5, 0), (0, 255, 80), (0, 200, 255))),
-        ("ice_breaker", ((40, 20, 5), (15, 5, 0), (255, 220, 120), (200, 255, 255))),
-        ("blood_neon", ((5, 0, 20), (0, 0, 5), (40, 40, 255), (80, 120, 255))),
-        ("monochrome_static", ((20, 20, 20), (0, 0, 0), (220, 220, 220), (255, 255, 255))),
+        ("cyber_magenta", ((10, 0, 0), (0, 0, 10), (0, 0, 255), (255, 0, 255))),
+        ("electric_cyan", ((5, 20, 5), (0, 5, 0), (0, 255, 80), (0, 200, 255))),
+        ("acid_lime", ((40, 20, 5), (15, 5, 0), (255, 220, 120), (200, 255, 255))),
+        ("hot_amber", ((5, 0, 20), (0, 0, 5), (40, 40, 255), (80, 120, 255))),
+        ("ultra_violet", ((20, 20, 20), (0, 0, 0), (220, 220, 220), (255, 255, 255))),
     ],
     "lofi_drift": [
-        ("study_lamp", ((45, 55, 70), (25, 30, 40), (120, 170, 220), (160, 200, 240))),
-        ("rain_window", ((50, 40, 35), (25, 20, 18), (180, 160, 140), (200, 190, 180))),
-        ("cafe_sepia", ((40, 55, 70), (20, 30, 40), (80, 140, 200), (120, 180, 220))),
-        ("pastel_dusk", ((70, 50, 60), (35, 25, 35), (200, 160, 220), (220, 190, 230))),
-        ("midnight_tea", ((35, 25, 20), (12, 8, 6), (140, 120, 100), (180, 160, 140))),
+        ("cyber_magenta", ((45, 55, 70), (25, 30, 40), (120, 170, 220), (160, 200, 240))),
+        ("electric_cyan", ((50, 40, 35), (25, 20, 18), (180, 160, 140), (200, 190, 180))),
+        ("acid_lime", ((40, 55, 70), (20, 30, 40), (80, 140, 200), (120, 180, 220))),
+        ("hot_amber", ((70, 50, 60), (35, 25, 35), (200, 160, 220), (220, 190, 230))),
+        ("ultra_violet", ((35, 25, 20), (12, 8, 6), (140, 120, 100), (180, 160, 140))),
     ],
 }
 
@@ -110,25 +111,27 @@ def text(frame, s, center, scale, color, thick=2):
 
 
 def hud(frame, text_color, accent):
-    text(frame, EXAMPLE_TITLE, (W // 2, int(H * 0.12)), 0.85, text_color, 2)
-    text(frame, EXAMPLE_ARTIST, (W // 2, int(H * 0.18)), 0.5, accent, 1)
-    text(frame, EXAMPLE_META, (W // 2, int(H * 0.92)), 0.45, accent, 1)
+    # Title/artist moved DOWN; meta moved UP (out of Instagram bottom overlay)
+    text(frame, EXAMPLE_TITLE, (W // 2, int(H * 0.16)), 0.85, text_color, 2)
+    text(frame, EXAMPLE_ARTIST, (W // 2, int(H * 0.23)), 0.5, accent, 1)
+    text(frame, EXAMPLE_META, (W // 2, int(H * 0.76)), 0.45, accent, 1)
 
 
 def draw_neon(frame, t, primary, accent):
     pulse = 0.7 + 0.3 * abs(math.sin(t * 4))
-    base_y = int(H * 0.72)
+    # Spectrum bars moved UP to avoid Instagram bottom overlay
+    base_y = int(H * 0.52)
     n = 16
     for i in range(n):
         mag = 0.3 + 0.7 * abs(math.sin(t * 3 + i * 0.4))
         x = int(20 + i * ((W - 40) / n))
-        bh = int(mag * 160 * pulse)
+        bh = int(mag * 120 * pulse)
         bw = 12
         cv2.rectangle(frame, (x, base_y - bh), (x + bw, base_y), primary, -1)
         cv2.rectangle(frame, (x + bw, base_y - bh - 8), (x + bw + 8, base_y - 8), accent, -1)
     xs = np.linspace(0, W - 1, 80)
     pts = np.array(
-        [[int(x), int(H * 0.82 + 20 * math.sin(t * 6 + x * 0.08))] for x in xs], np.int32
+        [[int(x), int(H * 0.66 + 20 * math.sin(t * 6 + x * 0.08))] for x in xs], np.int32
     )
     cv2.polylines(frame, [pts], False, accent, 2, cv2.LINE_AA)
 
@@ -234,9 +237,9 @@ def bake_one(style_id: str, palette_id: str, colors) -> Path:
     assert proc.stdin is not None
 
     # Load pre-rendered gradient background once
-    gradient_bg = load_gradient_asset(style_id, palette_id)
+    gradient_bg = load_gradient_asset(palette_id)
     if gradient_bg is None:
-        raise RuntimeError(f"Gradient asset not found: {style_id}_{palette_id}.png")
+        raise RuntimeError(f"Gradient asset not found: {palette_id}.png")
 
     for i in range(total):
         t = i / FPS

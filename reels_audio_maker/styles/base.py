@@ -43,19 +43,20 @@ class FrameContext:
     palette: Palette
 
 
-def _load_gradient_asset(style_id: str, palette_id: str) -> np.ndarray | None:
+def _load_gradient_asset(palette_id: str) -> np.ndarray | None:
     """Load pre-rendered gradient background from assets/gradients/.
     Returns float32 array (0..255) or None if not found.
 
     Handles both 8-bit and 16-bit PNGs automatically.
     """
-    cache_key = f"{style_id}_{palette_id}"
+    cache_key = f"gradient_{palette_id}"
     if cache_key in _GRADIENT_CACHE:
-        return _GRADIENT_CACHE[cache_key]
+        # Return a COPY to prevent in-place mutation across frames
+        return _GRADIENT_CACHE[cache_key].copy()
 
     # Project root = parent of package
     root = Path(__file__).resolve().parent.parent.parent
-    asset_path = root / "assets" / "gradients" / f"{style_id}_{palette_id}.png"
+    asset_path = root / "assets" / "gradients" / f"{palette_id}.png"
 
     if not asset_path.is_file():
         return None
@@ -74,23 +75,22 @@ def _load_gradient_asset(style_id: str, palette_id: str) -> np.ndarray | None:
         img = img.astype(np.float32)
 
     _GRADIENT_CACHE[cache_key] = img
-    return img
+    return img.copy()
 
 
 def vertical_gradient(h: int, w: int, top: Color, bottom: Color,
-                      invert: bool = False, style_id: str | None = None,
-                      palette_id: str | None = None) -> np.ndarray:
+                      invert: bool = False, palette_id: str | None = None) -> np.ndarray:
     """Vertical linear gradient from top to bottom color.
 
-    If style_id and palette_id are provided, loads pre-rendered high-quality
+    If palette_id is provided, loads pre-rendered high-quality
     gradient from assets/gradients/ (with subtle vignette). Falls back to
     procedural generation if asset not found.
 
     Returns float32 array (0..255 range) to preserve precision for 10-bit encoding.
     """
     # Try to load pre-rendered gradient asset
-    if style_id and palette_id:
-        asset = _load_gradient_asset(style_id, palette_id)
+    if palette_id:
+        asset = _load_gradient_asset(palette_id)
         if asset is not None:
             # Resize if needed (should match export resolution)
             if asset.shape[0] != h or asset.shape[1] != w:
@@ -180,13 +180,13 @@ def add_vignette(frame: np.ndarray, strength: float = 0.15) -> np.ndarray:
     mask = 1.0 - strength * (dist / max_dist) ** 2
     mask = np.clip(mask, 0.15, 1.0).astype(np.float32)
     out = frame.astype(np.float32) * mask[..., None]
-    return np.clip(out, 0, 255).astype(np.uint8)
+    return np.clip(out, 0, 255).astype(np.float32)
 
 
 def add_grain(frame: np.ndarray, amount: float = 12.0, seed: int | None = None) -> np.ndarray:
     rng = np.random.default_rng(seed)
     noise = rng.normal(0, amount, frame.shape).astype(np.float32)
-    return np.clip(frame.astype(np.float32) + noise, 0, 255).astype(np.uint8)
+    return np.clip(frame.astype(np.float32) + noise, 0, 255).astype(np.float32)
 
 
 def draw_waveform_strip(

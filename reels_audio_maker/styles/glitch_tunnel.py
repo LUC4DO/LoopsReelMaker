@@ -84,8 +84,7 @@ def _chromatic(frame: np.ndarray, amount: int) -> np.ndarray:
 
 def draw_frame(ctx: FrameContext) -> np.ndarray:
     p = ctx.palette
-    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom,
-                              style_id="glitch_tunnel", palette_id=p.id)
+    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom, palette_id=p.id)
     _tunnel(frame, p, ctx.t, ctx.spectrum, 0.7 + 0.3 * ctx.beat_pulse)
 
     # starfield rush

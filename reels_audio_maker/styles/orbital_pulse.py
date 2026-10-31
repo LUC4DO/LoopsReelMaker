@@ -21,8 +21,7 @@ PALETTES: list[Palette] = get_style_palettes("orbital_pulse")
 
 def draw_frame(ctx: FrameContext) -> np.ndarray:
     p = ctx.palette
-    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom,
-                              style_id="orbital_pulse", palette_id=p.id)
+    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom, palette_id=p.id)
     cx, cy = ctx.width // 2, int(ctx.height * 0.48)
     bands = resample_spectrum(ctx.spectrum, 48)
     n = len(bands)
@@ -51,7 +50,7 @@ def draw_frame(ctx: FrameContext) -> np.ndarray:
     overlay = frame.copy()
     cv2.circle(overlay, (cx, cy), core_r, p.glow, -1, cv2.LINE_AA)
     cv2.circle(overlay, (cx, cy), core_r // 2, p.primary, -1, cv2.LINE_AA)
-    frame = cv2.addWeighted(overlay, 0.55, frame, 0.45, 0)
+    frame = cv2.addWeighted(overlay, 0.55, frame, 0.45, 0, dtype=cv2.CV_32F)
 
     # beat particles
     rng = np.random.default_rng(int(ctx.t * 8) % 10_000)

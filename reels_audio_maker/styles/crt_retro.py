@@ -43,24 +43,37 @@ def _draw_grid(frame: np.ndarray, p: Palette, t: float, pulse: float) -> None:
         cv2.line(frame, vanish, (x_bottom, h), p.primary, 1, cv2.LINE_AA)
 
 
-def _scanlines(frame: np.ndarray, strength: int = 28) -> np.ndarray:
+def _scanlines(frame: np.ndarray, strength: float = 28.0) -> np.ndarray:
+    """Apply scanline effect maintaining float32 precision."""
     out = frame.copy()
-    out[::2, :, :] = np.clip(out[::2, :, :].astype(np.int16) - strength, 0, 255).astype(np.uint8)
+    # Darken every other line by strength (0-255 scale)
+    out[::2, :, :] = np.clip(out[::2, :, :] - strength, 0, 255)
     return out
 
 
-def _rgb_fringe(frame: np.ndarray, amount: int = 3) -> np.ndarray:
-    b, g, r = cv2.split(frame)
-    M = np.float32([[1, 0, amount], [0, 1, 0]])
-    r2 = cv2.warpAffine(r, M, (frame.shape[1], frame.shape[0]), borderMode=cv2.BORDER_REFLECT)
-    M2 = np.float32([[1, 0, -amount], [0, 1, 0]])
-    b2 = cv2.warpAffine(b, M2, (frame.shape[1], frame.shape[0]), borderMode=cv2.BORDER_REFLECT)
-    return cv2.merge([b2, g, r2])
+def _rgb_fringe(frame: np.ndarray, amount: float = 3.0) -> np.ndarray:
+    """Apply RGB fringe effect maintaining float32 precision."""
+    # Split channels
+    b = frame[:, :, 0].copy()
+    g = frame[:, :, 1].copy()
+    r = frame[:, :, 2].copy()
+
+    h, w = frame.shape[:2]
+
+    # Shift red channel right, blue channel left
+    M_r = np.float32([[1, 0, amount], [0, 1, 0]])
+    M_b = np.float32([[1, 0, -amount], [0, 1, 0]])
+
+    r2 = cv2.warpAffine(r, M_r, (w, h), borderMode=cv2.BORDER_REFLECT)
+    b2 = cv2.warpAffine(b, M_b, (w, h), borderMode=cv2.BORDER_REFLECT)
+
+    out = np.stack([b2, g, r2], axis=2)
+    return np.clip(out, 0, 255).astype(np.float32)
 
 
 def draw_frame(ctx: FrameContext) -> np.ndarray:
     p = ctx.palette
-    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom)
+    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom, palette_id=p.id)
     _draw_grid(frame, p, ctx.t, ctx.beat_pulse)
 
     bands = resample_spectrum(ctx.spectrum, 40)

@@ -43,14 +43,20 @@ def _ensure_mp4(path: Path) -> Path:
 
 
 def _render_chunk(start: int, end: int, analysis: AudioAnalysis, settings: RenderSettings, fps: int) -> str:
-    """Render a chunk of frames to a temporary rawvideo file and return its path."""
+    """Render a chunk of frames to a temporary rawvideo file and return its path.
+
+    Frames are kept in float32 [0, 255] and converted to uint16 [0, 65535] for 10-bit pipeline.
+    """
     import tempfile
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".raw")
     for idx in range(start, end):
         t_val = idx / fps
         frm = draw_export_frame(analysis, settings, t_val)
-        if frm.dtype != np.uint8:
-            frm = frm.astype(np.uint8)
+        # Convert float32 [0,255] -> uint16 [0, 65535] for 10-bit precision
+        if frm.dtype == np.float32:
+            frm = np.clip(frm * 257.0, 0, 65535).astype(np.uint16)
+        elif frm.dtype != np.uint16:
+            frm = frm.astype(np.uint16)
         tmp.write(frm.tobytes())
     tmp.close()
     return tmp.name
@@ -118,6 +124,8 @@ def export_mp4(
         tmp_path = Path(tmp)
         silent_video = tmp_path / "silent.mp4"
 
+        # Input pixel format: rgb48le (16-bit per channel, packed) for 10-bit precision
+        # libx265 will convert to yuv420p10le internally
         cmd = [
             ffmpeg,
             "-y",
@@ -128,7 +136,7 @@ def export_mp4(
             "-s",
             f"{w}x{h}",
             "-pix_fmt",
-            "bgr24",
+            "rgb48le",  # 16-bit per channel packed RGB (matches our uint16 BGR order)
             "-r",
             str(fps),
             "-i",

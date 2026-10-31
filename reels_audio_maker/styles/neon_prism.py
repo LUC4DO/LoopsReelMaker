@@ -8,7 +8,7 @@ import numpy as np
 from .base import (
     FrameContext,
     Palette,
-    draw_hud,
+    draw_centered_text,
     draw_waveform_strip,
     lerp_color,
     perspective_bar_poly,
@@ -20,19 +20,41 @@ from .palettes import get_style_palettes
 PALETTES: list[Palette] = get_style_palettes("neon_prism")
 
 
+def _draw_hud_neon(frame: np.ndarray, ctx: FrameContext, title_scale: float = 2.4) -> None:
+    """Custom HUD for Neon Prism.
+
+    Title/artist moved DOWN (away from top), meta moved UP (out of Instagram
+    bottom overlay zone). Spectrum bars and waveform also shifted up.
+    """
+    h, w = frame.shape[:2]
+    draw_centered_text(frame, ctx.loop_name, (w // 2, int(h * 0.16)), title_scale, ctx.palette.text, 3)
+    if ctx.artist:
+        draw_centered_text(
+            frame,
+            ctx.artist,
+            (w // 2, int(h * 0.23)),
+            title_scale * 0.45,
+            ctx.palette.secondary,
+            2,
+        )
+    meta = f"{int(round(ctx.bpm))} BPM  ·  {ctx.key}"
+    draw_centered_text(frame, meta, (w // 2, int(h * 0.76)), 1.1, ctx.palette.accent, 2)
+
+
 def draw_frame(ctx: FrameContext) -> np.ndarray:
     p = ctx.palette
-    # Restore gradient
-    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom)
+    # Load pre-rendered gradient background (with vignette)
+    frame = vertical_gradient(ctx.height, ctx.width, p.bg_top, p.bg_bottom, palette_id=p.id)
     bands = resample_spectrum(ctx.spectrum, 52)
     pulse = 0.85 + 0.25 * ctx.beat_pulse
 
-    base_y = int(ctx.height * 0.72)
+    # Move spectrum bars UP to avoid Instagram bottom overlay
+    base_y = int(ctx.height * 0.52)
     margin = int(ctx.width * 0.08)
     usable = ctx.width - 2 * margin
     bar_w = max(8, usable // len(bands) - 6)
     depth = int(18 + 10 * ctx.beat_pulse)
-    max_h = int(ctx.height * 0.38)
+    max_h = int(ctx.height * 0.20)
 
     for i, mag in enumerate(bands):
         x = margin + i * (usable // len(bands))
@@ -83,14 +105,15 @@ def draw_frame(ctx: FrameContext) -> np.ndarray:
         )
         cv2.polylines(frame, [poly[:4]], True, p.glow, 1, cv2.LINE_AA)
 
+    # Move waveform UP
     draw_waveform_strip(
         frame,
         ctx.waveform,
-        y_center=int(ctx.height * 0.82),
-        height=int(ctx.height * 0.08),
+        y_center=int(ctx.height * 0.66),
+        height=int(ctx.height * 0.05),
         color=p.secondary,
         mirror=True,
     )
-    draw_hud(frame, ctx, title_scale=2.4)
+    _draw_hud_neon(frame, ctx, title_scale=2.4)
     # No vignette
     return frame
